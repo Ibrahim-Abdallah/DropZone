@@ -1,0 +1,147 @@
+﻿@model ImageUploadViewModel
+
+<link href="~/lib/dropzone/min/dropzone.min.css" rel="stylesheet" />
+
+<form asp-action="Upload" asp-controller="Image" method="post" enctype="multipart/form-data" class="dropzone" id="upload-form">
+    <div class="fallback">
+        <input name="ImageFile" type="file" />
+    </div>
+    <button type="button" id="uploadButton">Upload</button>
+</form>
+
+<script src="~/lib/dropzone/min/dropzone.min.js"></script>
+
+<script>
+    // Initialize Dropzone.js
+    // Dropzone.options.uploadForm = { // The camelized version of the ID of the form element
+
+    //     // The configuration we've talked about above
+    //     autoProcessQueue: false,
+    //     uploadMultiple: true,
+    //     parallelUploads: 100,
+    //     maxFiles: 100,
+
+    //     // The setting up of the dropzone
+    //     init: function () {
+    //         var myDropzone = this;
+
+    //         // First change the button to actually tell Dropzone to process the queue.
+    //         this.element.querySelector("button[type=submit]").addEventListener("click", function (e) {
+    //             // Make sure that the form isn't actually being sent.
+    //             e.preventDefault();
+    //             e.stopPropagation();
+    //             myDropzone.processQueue();
+    //         });
+
+    //         // Listen to the sendingmultiple event. In this case, it's the sendingmultiple event instead
+    //         // of the sending event because uploadMultiple is set to true.
+    //         this.on("sendingmultiple", function () {
+    //             // Gets triggered when the form is actually being sent.
+    //             // Hide the success button or the complete form.
+    //         });
+    //         this.on("successmultiple", function (files, response) {
+    //             // Gets triggered when the files have successfully been sent.
+    //             // Redirect user or notify of success.
+    //         });
+    //         this.on("errormultiple", function (files, response) {
+    //             // Gets triggered when there was an error sending the files.
+    //             // Maybe show form again, and notify user of error
+    //         });
+    //     }
+
+    // }
+
+    Dropzone.autoDiscover = false; // Disable auto-discovery of all elements with the class dropzone
+    var myDropzone = new Dropzone("#myDropzone", {
+        paramName: "ImageFile",
+        maxFilesize: 1,
+        acceptedFiles: ".jpg, .png",
+        maxFiles: 1,
+        autoProcessQueue: false, // Disable automatic uploading
+        previewTemplate: `
+            <div class="dz-preview dz-file-preview">
+                <div class="dz-image">
+                    <img data-dz-thumbnail />
+                </div>
+                <div class="dz-details">
+                    <div class="dz-filename"><span data-dz-name></span></div>
+                    <div class="dz-size" data-dz-size></div>
+                    <button class="dz-remove" data-dz-remove>Remove</button>
+                </div>
+                <div class="dz-progress"><span class="dz-upload" data-dz-uploadprogress></span></div>
+                <div class="dz-success-mark"><span>✔</span></div>
+                <div class="dz-error-mark"><span>✘</span></div>
+                <div class="dz-error-message"><span data-dz-errormessage></span></div>
+            </div>
+        `,
+        init: function () {
+            this.on("addedfile", function (file) {
+                // Add additional validation logic here if needed
+                console.log(file);
+                file.previewElement.addEventListener("click", function () {
+                    myDropzone.removeFile(file);
+                });
+            });
+
+            // Event handler for successful uploads
+            this.on("success", function (file, response) {
+                if (response.success) {
+                    // Success SweetAlert
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: response.message,
+                    });
+                } else {
+                    // Error SweetAlert
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: response.message,
+                    });
+                }
+            });
+
+            // Event handler for removed files
+            this.on("removedfile", function (file) {
+                // Send an AJAX request to the server to remove the file
+                var fileName = file.name;
+                
+                $.ajax({
+                    type: "POST",
+                    url: "/Image/RemoveFile",
+                    data: { fileName: fileName },
+                    success: function (response) {
+                        if (response.success) {
+                            // File removed successfully
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success!',
+                                text: response.message,
+                            });
+                        } else {
+                            // Error removing file
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error!',
+                                text: response.message,
+                            });
+                        }
+                    },
+                    error: function () {
+                        // Error handling for the AJAX request
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: 'Error communicating with the server.',
+                        });
+                    }
+                });
+            });
+        }
+    });
+
+    document.getElementById("uploadButton").addEventListener("click", function () {
+        myDropzone.processQueue(); // Manually start the upload process
+    });
+</script>
